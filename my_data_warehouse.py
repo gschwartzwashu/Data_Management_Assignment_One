@@ -3,6 +3,10 @@ from data_warehouse import DataWarehouse
 
 
 class MyDataWarehouse(DataWarehouse):
+
+    def __init__(self, partition_size, storage_dir) -> None:
+        pass
+
     def add_data(self, data: Dict[str, Any]) -> None:
         # Implementation here
         raise NotImplementedError("This method is not implemented yet.")
