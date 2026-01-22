@@ -5,6 +5,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pyarrow.compute as pc
 
+"""
+TODO
+- Add metadata in memory for micro-partitions by id: store id range in memory with file path
+- Will help speed up query
+"""
+
 class MyDataWarehouse(DataWarehouse):
 
     def __init__(self, partition_size, storage_dir) -> None:
