@@ -11,6 +11,8 @@ class MyDataWarehouse(DataWarehouse):
         self.partition_size = partition_size
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self._buffer = []
+        self._buffer_rows = 0
 
         self.partitions = sorted(self.storage_dir.glob("part_*.parquet"))
 
@@ -28,24 +30,19 @@ class MyDataWarehouse(DataWarehouse):
         return pa.table({k: [v] for k, v in data.items()})
 
     def add_data(self, data: Dict[str, Any]) -> None:
-        row = self._dict_to_table(data)
+        self._buffer.append(data)
+        self._buffer_rows += 1
 
-        if not self.partitions:
-            path = self._next_partition_path()
-            self._write_partition(row, path)
-            self.partitions.append(path)
+        if self._buffer_rows < self.partition_size:
             return
 
-        last_path = self.partitions[-1]
-        table = self._read_partition(last_path)
+        table = pa.Table.from_pylist(self._buffer)
+        path = self._next_partition_path()
+        self._write_partition(table, path)
 
-        if table.num_rows >= self.partition_size:
-            path = self._next_partition_path()
-            self._write_partition(row, path)
-            self.partitions.append(path)
-        else:
-            combined = pa.concat_tables([table, row])
-            self._write_partition(combined, last_path)
+        self.partitions.append(path)
+        self._buffer.clear()
+        self._buffer_rows = 0
 
     def update_data(self, key_column: str, key_value: Any, updated_data: Dict[str, Any]) -> None:
         key_value = str(key_value)
